@@ -26,33 +26,33 @@ spec:
       description: Git branch to check out when cloning the repository.
       default: legacy
     - name: create-test-resources
-      description: 'Indicates if a set of test resources should be installed'
-      default: 'true'
+      description: "Indicates if a set of test resources should be installed"
+      default: "true"
     - name: component-name
       description: |
         The GitHub repository name of the Konflux CI component to customize (e.g., `build-service`, `release-service`).
         Used for applying image or Kubernetes manifest overrides.
-      default: ''
+      default: ""
     - name: component-image-repository
       description: |
         Overrides the container image repository for the `component-name` (e.g., `quay.io/my-org/my-custom-image`).
-      default: ''
+      default: ""
     - name: component-image-tag
       description: |
         Overrides the container image tag for the `component-name` (e.g., `latest`, `my-feature-branch`).
-      default: ''
+      default: ""
     - name: component-pr-owner
       description: |
         GitHub owner (user|org) of the fork/PR providing custom Kubernetes manifests for the `component-name`.
-      default: ''
+      default: ""
     - name: component-pr-sha
       description: |
         Commit SHA of the PR (from `component-pr-owner`) supplying custom Kubernetes manifests for the `component-name`.
-      default: ''
+      default: ""
     - name: component-pr-source-branch
       description: |
         GitHub source branch of the pull request.
-      default: ''
+      default: ""
     - name: oci-ref
       type: string
       description: Full OCI artifact reference in a format "quay.io/org/repo:tag. It's used for storing logs from the Task's Steps
@@ -72,7 +72,7 @@ spec:
         Scales admission-controller to 3 replicas with increased resources,
         background-controller to 2 replicas, and disables the reports-controller
         to reduce etcd write churn under heavy webhook traffic.
-      default: 'false'
+      default: "false"
 
   volumes:
     - name: cluster-credentials
@@ -92,9 +92,9 @@ spec:
   stepTemplate:
     env:
       - name: KUBECONFIG
-        value: '/cluster-credentials/kubeconfig'
+        value: "/cluster-credentials/kubeconfig"
       - name: LOG_FILENAME
-        value: '/var/log-dir/deploy-konflux-ci.log'
+        value: "/var/log-dir/deploy-konflux-ci.log"
     volumeMounts:
       - name: cluster-credentials
         mountPath: /cluster-credentials
@@ -188,7 +188,12 @@ spec:
           fi
 
           # Repo names do not match the ones of the component. Try to find the right kustomization.yaml based on the component name.
-          KUSTOMIZATION_PATH=$(find konflux-ci/ -type f -name "kustomization.yaml" -path "*${COMPONENT_NAME%-service}*/core/*" | head -n 1)
+          # konflux-ui is deployed from konflux-ci/ui/ (folder name differs from the component name).
+          FOLDER_NAME="${COMPONENT_NAME%-service}"
+          if [[ "${COMPONENT_NAME}" == "konflux-ui" ]]; then
+            FOLDER_NAME="ui"
+          fi
+          KUSTOMIZATION_PATH=$(find konflux-ci/ -type f -name "kustomization.yaml" -path "*${FOLDER_NAME}*/core/*" | head -n 1)
 
           # Check if the file exists
           if [[ ! -f "${KUSTOMIZATION_PATH}" ]]; then
